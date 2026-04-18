@@ -596,7 +596,7 @@ html,body {
 
 <script>
 // ══ ВСТАВЬТЕ СЮДА URL ВАШЕГО WEB APP из Google Apps Script ══
-const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxMc9x1vKWW-8PABybmG2iIZC6bCYSSJImV8k5qQN_tIiUYjnEqyRP4-4sOOifc0sWahQ/exec';
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyiC_-r_z9r_lQQNM7FVTFxH-i_27TOLvyJUeNI8FySgHGjpEz-qGozIgxV3c-USsQtig/exec';
 
 // Бюджеты по целям
 const BUDGETS = {
@@ -871,19 +871,11 @@ function loadForecast(){
   document.getElementById('fc-result').style.display  = 'none';
   forecast = {calls:null, price:null};
 
-  // Прогноз имеет смысл только для Авто (есть марка)
-  // Для остальных категорий — сразу переходим к итогу
-  if (st.cat !== 'Авто') {
-    buildResult();
-    goTo(9);
-    return;
-  }
-
   const params = new URLSearchParams({
     city:      st.city,
-    brand:     st.spec,
+    brand:     st.spec || st.cat,
     budget:    st.bud,
-    direction: GOAL_TO_DIRECTION[st.goal] || '',
+    direction: GOAL_TO_DIRECTION[st.goal] || st.goal || '',
     region:    REGIONS[st.reg] ? REGIONS[st.reg].name : '',
     channel:   st.channels[0] || '',
     category:  st.cat || '',
