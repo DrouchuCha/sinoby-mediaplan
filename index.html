@@ -269,6 +269,98 @@ html,body {
 .brand-btn.selected::after { opacity:1; }
 .brand-btn:active { transform:scale(.97); }
 
+/* ═══════════════════════════════════
+   S5 — цели 2×2 (как города)
+═══════════════════════════════════ */
+.goal-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  grid-auto-rows:1fr;
+  gap:0;
+  width:100%;
+  border:1px solid var(--border);
+  border-radius:4px;
+  overflow:hidden;
+  min-height:340px;
+}
+
+.goal-btn {
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+  background:transparent; border:none;
+  border-right:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  cursor:pointer; -webkit-appearance:none;
+  position:relative; overflow:hidden;
+  transition:background .15s;
+  padding:18px 12px;
+  min-height:140px;
+}
+.goal-btn:nth-child(even) { border-right:none; }
+.goal-btn:nth-last-child(-n+2) { border-bottom:none; }
+.goal-btn::before { content:''; position:absolute; inset:0; background:var(--gold-l); opacity:0; transition:opacity .18s; }
+.goal-btn.selected::before, .goal-btn.flash::before { opacity:1; }
+.goal-btn.selected { box-shadow:inset 0 0 0 1.5px rgba(201,169,110,.45); }
+.goal-btn:active { background:rgba(201,169,110,.06); }
+.goal-ico  { font-size:24px; position:relative; z-index:1; }
+.goal-main {
+  font-size:14px; font-weight:500;
+  color:var(--white); text-align:center;
+  line-height:1.3; letter-spacing:.2px;
+  padding:0 4px;
+  position:relative; z-index:1;
+}
+
+/* ═══════════════════════════════════
+   ФОН-ПОДЛОЖКА для S2, S3, S4
+   (как на S1 «Выберите своё направление»)
+═══════════════════════════════════ */
+.bg-photo {
+  position:absolute; inset:0;
+  background-size:cover; background-position:center;
+  filter:brightness(.45);
+  opacity:0;
+  transition:opacity .7s ease;
+  z-index:0;
+  pointer-events:none;
+}
+.bg-photo.loaded { opacity:1; }
+.bg-overlay {
+  position:absolute; inset:0;
+  background:linear-gradient(180deg, rgba(10,10,10,.55) 0%, rgba(10,10,10,.78) 100%);
+  z-index:0;
+  pointer-events:none;
+}
+
+/* делаем S2, S3 и S4 относительными для подложки */
+#s2, #s3 { position:absolute; }
+#s2 .fs-wrap, #s3 .fs-wrap { position:relative; z-index:1; }
+
+/* для S4 (со скроллом) подложка фиксируется на весь экран */
+#s4 .scroll-bg-photo {
+  position:fixed; inset:0;
+  background-size:cover; background-position:center;
+  filter:brightness(.4);
+  opacity:0;
+  transition:opacity .7s ease;
+  z-index:0;
+  pointer-events:none;
+}
+#s4 .scroll-bg-photo.loaded { opacity:1; }
+#s4 .scroll-bg-overlay {
+  position:fixed; inset:0;
+  background:linear-gradient(180deg, rgba(10,10,10,.6) 0%, rgba(10,10,10,.82) 100%);
+  z-index:0;
+  pointer-events:none;
+}
+#s4 > *:not(.scroll-bg-photo):not(.scroll-bg-overlay) { position:relative; z-index:1; }
+#s4 .scroll-bg-photo, #s4 .scroll-bg-overlay { display:none; }
+#s4.has-bg .scroll-bg-photo, #s4.has-bg .scroll-bg-overlay { display:block; }
+
+/* прозрачные «грид-контейнеры» поверх подложки */
+#s2 .region-grid, #s3 .city-grid { background:transparent; }
+#s2 .reg-btn, #s3 .city-btn { background:transparent; }
+
+/* ──────────────────────────────── */
 /* ── SPEC / GOAL / CHANNEL CARDS ── */
 .card-list { display:flex; flex-direction:column; gap:8px; width:100%; }
 .card-btn {
@@ -466,6 +558,8 @@ html,body {
 
 <!-- ══ S2: РЕГИОН ══ -->
 <div class="screen" id="s2">
+  <div class="bg-photo" id="bgPhotoS2"></div>
+  <div class="bg-overlay"></div>
   <div class="fs-wrap">
     <div class="fs-q">
       <div class="fs-q-text">Ваш регион</div>
@@ -476,6 +570,8 @@ html,body {
 
 <!-- ══ S3: ГОРОД ══ -->
 <div class="screen" id="s3">
+  <div class="bg-photo" id="bgPhotoS3"></div>
+  <div class="bg-overlay"></div>
   <div class="fs-wrap">
     <div class="fs-q">
       <div class="fs-q-text" id="cityQ">Выберите ваш город</div>
@@ -486,6 +582,8 @@ html,body {
 
 <!-- ══ S4: БРЕНД / КАТЕГОРИЯ / НАПРАВЛЕНИЕ ══ -->
 <div class="screen" id="s4">
+  <div class="scroll-bg-photo" id="bgPhotoS4"></div>
+  <div class="scroll-bg-overlay"></div>
   <div class="step-bar"><span class="step-brand">SINOBY</span><span class="step-num">04 / 08</span></div>
   <div class="q" id="specQ">Выберите детали</div>
   <div id="specContent" style="width:100%;max-width:420px"></div>
@@ -496,7 +594,7 @@ html,body {
 <div class="screen" id="s5">
   <div class="step-bar"><span class="step-brand">SINOBY</span><span class="step-num">05 / 08</span></div>
   <div class="q">Цель кампании?</div>
-  <div class="card-list" id="goalList" style="max-width:420px;width:100%"></div>
+  <div class="goal-grid" id="goalList" style="max-width:420px;width:100%"></div>
   <div class="pad"></div>
 </div>
 
@@ -748,7 +846,6 @@ const CHANNELS = [
   {ico:'💙', name:'ВКонтакте',       sub:'Таргетированная реклама'},
   {ico:'📍', name:'Гео перформанс',  sub:'Геолокационная реклама'},
   {ico:'🛒', name:'AVITO',           sub:'Площадка объявлений'},
-  {ico:'🔍', name:'SEO',             sub:'Поисковое продвижение'},
 ];
 
 // ══ STATE ══
@@ -806,9 +903,33 @@ function haptic(t){
   }catch(e){}
 }
 
+// Фотки фона по категории
+const CAT_PHOTOS = {
+  'Авто':         'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=1400&q=80&auto=format&fit=crop',
+  'Недвижимость': 'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1400&q=80&auto=format&fit=crop',
+  'Медицина':     'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1400&q=80&auto=format&fit=crop',
+};
+
+function applyBgPhoto(cat){
+  const url = CAT_PHOTOS[cat];
+  if (!url) return;
+  ['bgPhotoS2','bgPhotoS3','bgPhotoS4'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.backgroundImage = `url('${url}')`;
+    el.classList.remove('loaded');
+    const img = new Image();
+    img.onload = ()=> el.classList.add('loaded');
+    img.src = url;
+  });
+  const s4 = document.getElementById('s4');
+  if (s4) s4.classList.add('has-bg');
+}
+
 // ══ PICKS ══
 function pickCat(tile,name){
   st.cat=name; tile.classList.add('flash'); haptic('sel');
+  applyBgPhoto(name);
   setTimeout(()=>{ buildRegions(); goTo(2); },200);
 }
 function pickReg(btn,i){
@@ -964,8 +1085,8 @@ function buildGoals(){
   st.goal=null;
   const l=document.getElementById('goalList'); l.innerHTML='';
   (GOALS[st.cat]||[]).forEach(g=>{
-    const b=document.createElement('button'); b.className='card-btn';
-    b.innerHTML=`<div class="card-main">${g.main}</div><div class="card-chk">✓</div>`;
+    const b=document.createElement('button'); b.className='goal-btn';
+    b.innerHTML=`<div class="goal-ico">${g.ico}</div><div class="goal-main">${g.main}</div>`;
     b.onclick=()=>pickGoal(b,g.main); l.appendChild(b);
   });
 }
