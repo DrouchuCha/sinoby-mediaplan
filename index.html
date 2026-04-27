@@ -723,8 +723,34 @@ html,body {
       <div class="res-row"><span class="res-lbl">Звонков ~</span>          <span class="res-val" id="r-calls">—</span></div>
       <div class="res-row"><span class="res-lbl">Цена звонка ~</span>      <span class="res-val" id="r-price">—</span></div>
     </div>
-    <button class="send-btn" onclick="sendResult()">Отправить запрос →</button>
+    <button class="send-btn" onclick="sendResult()">Сформировать медиаплан →</button>
     <div style="height:32px"></div>
+  </div>
+</div>
+
+<!-- ══ S10: WELCOME (после отправки) ══ -->
+<div class="screen" id="s10">
+  <div class="splash-wrap">
+    <div class="splash-inner">
+      <div class="logo-mark" style="margin-bottom:32px">
+        <img src="https://sinoby.ru/site/img/logo_white.svg"
+             alt="SINOBY"
+             style="width:100%;height:100%;object-fit:contain"
+             onerror="this.style.display='none'">
+      </div>
+      <div style="font-size:22px;font-weight:600;color:var(--white);text-align:center;line-height:1.4;margin-bottom:14px;padding:0 24px">
+        👋 Добро пожаловать<br>в SINOBY MediaPlanBot
+      </div>
+      <div class="logo-line"></div>
+      <div style="font-size:14px;color:var(--muted);text-align:center;line-height:1.55;margin-top:18px;padding:0 24px">
+        Нажмите кнопку ниже,<br>чтобы создать медиаплан
+      </div>
+      <button id="welcomeBtn"
+              style="margin-top:36px;background:var(--gold);color:var(--black);border:none;border-radius:3px;padding:18px 36px;font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;cursor:pointer;-webkit-appearance:none"
+              onclick="restartQuiz()">
+        Создать медиаплан
+      </button>
+    </div>
   </div>
 </div>
 
@@ -1237,6 +1263,53 @@ function sendResult(){
   });
   try{window.Telegram?.WebApp?.sendData(d);}catch(e){}
   haptic('ok');
+
+  // Через 30 секунд показываем welcome-экран
+  // Кнопка отправки — деактивируется визуально, чтоб не нажимали повторно
+  const btn = document.querySelector('#s9 .send-btn');
+  if (btn){
+    btn.disabled = true;
+    btn.style.opacity = '.5';
+    btn.style.pointerEvents = 'none';
+    btn.textContent = 'Медиаплан готовится...';
+  }
+  setTimeout(()=>{ goToWelcome(); }, 30000);
+}
+
+function goToWelcome(){
+  // Прячем все экраны и показываем S10, прогресс/back скрываем
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active','exit'));
+  const w = document.getElementById('s10');
+  w.classList.add('active'); w.scrollTop = 0;
+  st.scr = 10;
+  hist.length = 0;
+  document.getElementById('progressBar').classList.remove('show');
+  document.getElementById('backBtn').classList.remove('show');
+}
+
+function restartQuiz(){
+  // Полный сброс состояния и возврат на S1 (выбор категории)
+  st = { scr:1, cat:null, reg:null, regName:null, city:null, spec:null, goal:null, channels:[], bud:null, contact:null };
+  forecast = { calls:null, price:null };
+  hist.length = 0;
+  // Чистим выделения на всех шагах
+  ['s1','s2','s3','s4','s5','s6','s7'].forEach(clr);
+  // Сбрасываем кнопку S9 на исходное состояние (на случай повторного прохода)
+  const btn = document.querySelector('#s9 .send-btn');
+  if (btn){
+    btn.disabled = false;
+    btn.style.opacity = '';
+    btn.style.pointerEvents = '';
+    btn.textContent = 'Сформировать медиаплан →';
+  }
+  // Прячем bar канала, если был
+  const chBar = document.getElementById('chNextBar');
+  if (chBar) chBar.style.display = 'none';
+  // Переключаем экраны
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active','exit'));
+  document.getElementById('s1').classList.add('active');
+  upProg(); upBack();
+  haptic('light');
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
