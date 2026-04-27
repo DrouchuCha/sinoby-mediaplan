@@ -329,7 +329,8 @@ html,body {
 .bg-photo {
   position:absolute; inset:0;
   background-size:cover; background-position:center;
-  filter:brightness(.45);
+  background-color:#1a1a1a;
+  filter:brightness(.65);
   opacity:0;
   transition:opacity .7s ease;
   z-index:0;
@@ -338,20 +339,20 @@ html,body {
 .bg-photo.loaded { opacity:1; }
 .bg-overlay {
   position:absolute; inset:0;
-  background:linear-gradient(180deg, rgba(10,10,10,.55) 0%, rgba(10,10,10,.78) 100%);
+  background:rgba(10,10,10,.35);
   z-index:0;
   pointer-events:none;
 }
 
-/* делаем S2, S3 и S4 относительными для подложки */
-#s2, #s3 { position:absolute; }
-#s2 .fs-wrap, #s3 .fs-wrap { position:relative; z-index:1; }
+/* S2 и S3 — внутри уже position:absolute через .screen */
+#s2 .fs-wrap, #s3 .fs-wrap { position:relative; z-index:1; background:transparent; }
 
 /* для S4 (со скроллом) подложка фиксируется на весь экран */
 #s4 .scroll-bg-photo {
   position:fixed; inset:0;
   background-size:cover; background-position:center;
-  filter:brightness(.4);
+  background-color:#1a1a1a;
+  filter:brightness(.55);
   opacity:0;
   transition:opacity .7s ease;
   z-index:0;
@@ -360,7 +361,7 @@ html,body {
 #s4 .scroll-bg-photo.loaded { opacity:1; }
 #s4 .scroll-bg-overlay {
   position:fixed; inset:0;
-  background:linear-gradient(180deg, rgba(10,10,10,.6) 0%, rgba(10,10,10,.82) 100%);
+  background:rgba(10,10,10,.45);
   z-index:0;
   pointer-events:none;
 }
@@ -942,21 +943,22 @@ function haptic(t){
 }
 
 // Фотки фона по категории (по 3 варианта, ротация рандомно)
+// Используем те же размеры, что на S1, чтобы Telegram взял из кеша
 const CAT_PHOTOS = {
   'Авто': [
-    'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=1400&q=80&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1493238792000-8113da705763?w=1400&q=80&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1503376780353-7e6f7b974d1b?w=1400&q=80&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=900&q=80&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1493238792000-8113da705763?w=900&q=80&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1503376780353-7e6f7b974d1b?w=900&q=80&auto=format&fit=crop',
   ],
   'Недвижимость': [
-    'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1400&q=80&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1400&q=80&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1400&q=80&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=900&q=80&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=900&q=80&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=900&q=80&auto=format&fit=crop',
   ],
   'Медицина': [
-    'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1400&q=80&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1538108149393-fbbd81895907?w=1400&q=80&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=1400&q=80&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=900&q=80&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1538108149393-fbbd81895907?w=900&q=80&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=900&q=80&auto=format&fit=crop',
   ],
 };
 
@@ -971,8 +973,13 @@ function setBgOn(elId, url, scrollEl){
   if (!el || !url) return;
   el.style.backgroundImage = `url('${url}')`;
   el.classList.remove('loaded');
+  // Сразу включаем opacity (CSS-переход всё равно отыграет анимацию)
+  // и параллельно прогружаем картинку — если не загрузится, увидим bg-color фолбэк
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=> el.classList.add('loaded'));
+  });
+  // Прогрев кеша
   const img = new Image();
-  img.onload = ()=> el.classList.add('loaded');
   img.src = url;
   if (scrollEl){
     const s4 = document.getElementById('s4');
@@ -981,8 +988,10 @@ function setBgOn(elId, url, scrollEl){
 }
 
 function applyBgPhoto(cat){
-  // Каждому экрану — своё рандомное фото из набора категории
-  setBgOn('bgPhotoS2', pickRandomPhoto(cat));
+  // На S2 используем ровно ту же картинку, что на S1 — гарантированно из кеша
+  // На S3/S4 случайные из набора
+  const first = CAT_PHOTOS[cat] && CAT_PHOTOS[cat][0];
+  setBgOn('bgPhotoS2', first || pickRandomPhoto(cat));
   setBgOn('bgPhotoS3', pickRandomPhoto(cat));
   setBgOn('bgPhotoS4', pickRandomPhoto(cat), true);
 }
