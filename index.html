@@ -188,7 +188,7 @@ html,body {
 }
 
 /* ═══════════════════════════════════
-   S3 — города 2×3
+   S3 — города 2×3 (стиль = регионы)
 ═══════════════════════════════════ */
 .city-grid {
   flex:1;
@@ -198,26 +198,38 @@ html,body {
 }
 
 .city-btn {
-  display:flex; align-items:center; justify-content:center;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
   background:transparent; border:none;
   border-right:1px solid var(--border);
   border-bottom:1px solid var(--border);
   cursor:pointer; -webkit-appearance:none;
   position:relative; overflow:hidden;
   transition:background .15s;
-  font-size:17px;
-  font-weight:500;
-  color:var(--white);
-  text-align:center;
-  padding:0 14px;
+  min-height:80px;
 }
 .city-btn:nth-child(even) { border-right:none; }
 .city-btn:nth-child(n+5)  { border-bottom:none; }
 .city-btn::before { content:''; position:absolute; inset:0; background:var(--gold-l); opacity:0; transition:opacity .18s; }
-.city-btn.selected::before,.city-btn.flash::before { opacity:1; }
+.city-btn.selected::before, .city-btn.flash::before { opacity:1; }
 .city-btn.selected { box-shadow:inset 0 0 0 1.5px rgba(201,169,110,.45); }
 .city-btn:active { background:rgba(201,169,110,.06); }
-.city-btn span { position:relative; z-index:1; }
+
+.city-name {
+  font-size:var(--fs);
+  font-weight:500;
+  color:var(--white);
+  letter-spacing:.3px;
+  text-align:center;
+  padding:0 6px;
+  position:relative; z-index:1;
+}
+.city-sub {
+  font-size:11px;
+  font-weight:400;
+  color:var(--muted);
+  letter-spacing:1px;
+  position:relative; z-index:1;
+}
 
 /* ═══════════════════════════════════
    S4+ — скролл-экраны
@@ -621,6 +633,25 @@ html,body {
   <div class="pad"></div>
 </div>
 
+<!-- ══ S7b: КОНТАКТ TELEGRAM ══ -->
+<div class="screen" id="s7b">
+  <div class="step-bar"><span class="step-brand">SINOBY</span><span class="step-num">08 / 08</span></div>
+  <div style="width:100%;max-width:420px;display:flex;flex-direction:column;align-items:center;padding-top:20px">
+    <div style="font-size:48px;margin-bottom:24px">💬</div>
+    <div class="q" style="margin-bottom:14px">Поделитесь контактом</div>
+    <div style="font-size:14px;color:var(--muted);text-align:center;line-height:1.55;margin-bottom:36px;padding:0 8px">
+      Чтобы менеджер мог связаться с вами<br>и обсудить детали медиаплана
+    </div>
+    <button class="send-btn" style="margin-bottom:14px" onclick="shareContact()">
+      Поделиться контактом →
+    </button>
+    <button onclick="skipContact()" style="background:transparent;border:none;color:var(--muted);font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:14px 24px;cursor:pointer;-webkit-appearance:none;letter-spacing:2px">
+      Пропустить
+    </button>
+    <div style="height:32px"></div>
+  </div>
+</div>
+
 <!-- ══ S8: ПРОГНОЗ (из таблицы) ══ -->
 <div class="screen" id="s8">
   <div class="step-bar"><span class="step-brand">SINOBY</span><span class="step-num">Прогноз</span></div>
@@ -849,7 +880,7 @@ const CHANNELS = [
 ];
 
 // ══ STATE ══
-let st = { scr:0, cat:null, reg:null, regName:null, city:null, spec:null, goal:null, channels:[], bud:null };
+let st = { scr:0, cat:null, reg:null, regName:null, city:null, spec:null, goal:null, channels:[], bud:null, contact:null };
 let forecast = { calls:null, price:null }; // данные из таблицы
 const hist = [];
 
@@ -872,15 +903,21 @@ function goBack() {
   document.getElementById('s'+st.scr).classList.remove('active');
   const pe = document.getElementById('s'+prev);
   pe.classList.add('active'); pe.scrollTop = 0;
-  if (prev<=1){st.cat=null;}
-  if (prev<=2){st.reg=null; clr('s2');}
-  if (prev<=3){st.city=null; clr('s3');}
-  if (prev<=4){st.spec=null; clr('s4');}
-  if (prev<=5){st.goal=null; clr('s5');}
-  if (prev<=6){st.channels=[]; clr('s6'); document.getElementById('chNextBar').style.display='none';}
-  if (prev<=7){st.bud=null; clr('s7');}
-  if (prev<=8){forecast={calls:null,price:null};}
-  st.scr=prev; upProg(); upBack(); haptic('light');
+
+  // нормализуем prev в числовой "уровень" для сброса состояния (s7b = 7.5)
+  const lvl = (prev === '7b') ? 7.5 : Number(prev);
+
+  if (lvl <= 1) { st.cat = null; }
+  if (lvl <= 2) { st.reg = null; clr('s2'); }
+  if (lvl <= 3) { st.city = null; clr('s3'); }
+  if (lvl <= 4) { st.spec = null; clr('s4'); }
+  if (lvl <= 5) { st.goal = null; clr('s5'); }
+  if (lvl <= 6) { st.channels = []; clr('s6'); document.getElementById('chNextBar').style.display='none'; }
+  if (lvl <= 7) { st.bud = null; clr('s7'); }
+  if (lvl <= 7.5) { st.contact = null; }
+  if (lvl <= 8) { forecast = {calls:null, price:null}; }
+
+  st.scr = prev; upProg(); upBack(); haptic('light');
 }
 
 function clr(id){ document.querySelectorAll('#'+id+' button').forEach(b=>b.classList.remove('selected','flash')); }
@@ -888,11 +925,12 @@ function clr(id){ document.querySelectorAll('#'+id+' button').forEach(b=>b.class
 function upProg(){
   const pb=document.getElementById('progressBar'), pf=document.getElementById('progressFill');
   const s=st.scr;
-  pb.classList.toggle('show', s>=2&&s<=7);
-  const m={2:1,3:2,4:3,5:4,6:5,7:6};
+  const showOn = (s>=2 && s<=7) || s==='7b';
+  pb.classList.toggle('show', showOn);
+  const m={2:1,3:2,4:3,5:4,6:5,7:6,'7b':6};
   pf.style.width=(m[s]?m[s]/6*100:0)+'%';
 }
-function upBack(){ document.getElementById('backBtn').classList.toggle('show',st.scr>0); }
+function upBack(){ document.getElementById('backBtn').classList.toggle('show', st.scr!==0 && st.scr!=='0'); }
 
 function haptic(t){
   try{
@@ -903,27 +941,50 @@ function haptic(t){
   }catch(e){}
 }
 
-// Фотки фона по категории
+// Фотки фона по категории (по 3 варианта, ротация рандомно)
 const CAT_PHOTOS = {
-  'Авто':         'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=1400&q=80&auto=format&fit=crop',
-  'Недвижимость': 'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1400&q=80&auto=format&fit=crop',
-  'Медицина':     'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1400&q=80&auto=format&fit=crop',
+  'Авто': [
+    'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=1400&q=80&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1493238792000-8113da705763?w=1400&q=80&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1503376780353-7e6f7b974d1b?w=1400&q=80&auto=format&fit=crop',
+  ],
+  'Недвижимость': [
+    'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1400&q=80&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1400&q=80&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1400&q=80&auto=format&fit=crop',
+  ],
+  'Медицина': [
+    'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1400&q=80&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1538108149393-fbbd81895907?w=1400&q=80&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=1400&q=80&auto=format&fit=crop',
+  ],
 };
 
+function pickRandomPhoto(cat){
+  const arr = CAT_PHOTOS[cat];
+  if (!arr || !arr.length) return null;
+  return arr[Math.floor(Math.random()*arr.length)];
+}
+
+function setBgOn(elId, url, scrollEl){
+  const el = document.getElementById(elId);
+  if (!el || !url) return;
+  el.style.backgroundImage = `url('${url}')`;
+  el.classList.remove('loaded');
+  const img = new Image();
+  img.onload = ()=> el.classList.add('loaded');
+  img.src = url;
+  if (scrollEl){
+    const s4 = document.getElementById('s4');
+    if (s4) s4.classList.add('has-bg');
+  }
+}
+
 function applyBgPhoto(cat){
-  const url = CAT_PHOTOS[cat];
-  if (!url) return;
-  ['bgPhotoS2','bgPhotoS3','bgPhotoS4'].forEach(id=>{
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.style.backgroundImage = `url('${url}')`;
-    el.classList.remove('loaded');
-    const img = new Image();
-    img.onload = ()=> el.classList.add('loaded');
-    img.src = url;
-  });
-  const s4 = document.getElementById('s4');
-  if (s4) s4.classList.add('has-bg');
+  // Каждому экрану — своё рандомное фото из набора категории
+  setBgOn('bgPhotoS2', pickRandomPhoto(cat));
+  setBgOn('bgPhotoS3', pickRandomPhoto(cat));
+  setBgOn('bgPhotoS4', pickRandomPhoto(cat), true);
 }
 
 // ══ PICKS ══
@@ -985,7 +1046,41 @@ function buildBudgets() {
 }
 function pickBudget(btn,v){
   clr('s7'); btn.classList.add('selected'); st.bud=v; haptic('sel');
-  setTimeout(()=>{ loadForecast(); goTo(8); },230);
+  setTimeout(()=>{ goTo('7b'); },230);
+}
+
+// ══ КОНТАКТ TELEGRAM ══
+function shareContact(){
+  haptic('sel');
+  try {
+    const tg = window.Telegram?.WebApp;
+    if (tg && typeof tg.requestContact === 'function') {
+      tg.requestContact((shared, result) => {
+        if (shared && result && result.responseUnsafe && result.responseUnsafe.contact) {
+          const c = result.responseUnsafe.contact;
+          st.contact = {
+            phone:      c.phone_number || null,
+            first_name: c.first_name   || null,
+            last_name:  c.last_name    || null,
+            user_id:    c.user_id      || null,
+          };
+        }
+        loadForecast();
+        goTo(8);
+      });
+      return;
+    }
+  } catch(e) { /* fallthrough */ }
+  // Fallback: если не Telegram WebApp — просто идём дальше
+  loadForecast();
+  goTo(8);
+}
+
+function skipContact(){
+  haptic('light');
+  st.contact = null;
+  loadForecast();
+  goTo(8);
 }
 
 // ══ ЗАПРОС К GOOGLE SHEETS ══
@@ -1053,7 +1148,7 @@ function buildCities(){
   const g=document.getElementById('cityGrid'); g.innerHTML='';
   r.cities.forEach(city=>{
     const b=document.createElement('button'); b.className='city-btn';
-    b.innerHTML=`<span>${city}</span>`;
+    b.innerHTML=`<div class="city-name">${city}</div><div class="city-sub">${r.short}</div>`;
     b.onclick=()=>pickCity(b,city); g.appendChild(b);
   });
 }
@@ -1126,6 +1221,7 @@ function sendResult(){
     goal:           st.goal,
     channels:       st.channels,
     budget:         st.bud,
+    contact:        st.contact,
     forecast_calls: forecast.calls,
     forecast_price: forecast.price,
     ts:             new Date().toISOString()
